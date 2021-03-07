@@ -6,11 +6,13 @@ import hashlib
 
 
 """
-access-method:
-    http-ui r
-    http-ui rw             (user: rw)
-    git-over-http r
-    git-over-http rw       (user: rw)
+    PROTOCOL        USER        EFFECT
+    http            None        httpdir
+    http            ro          http-ui
+    http            rw          http-ui
+    http-webdav     None        http-webdav,read-only
+    http-webdav     ro          http-webdav,read-only
+    http-webdav     rw          http-webdav,read-write
 
 we don't support ftp-protocol since it does not support one-server-multiple-domain.
 """
@@ -22,10 +24,6 @@ def start(params):
     dataDir = params["data-directory"]
     tmpDir = params["temp-directory"]
     webRootDir = params["webroot-directory"]
-
-    # htdigest file
-    htdigestFn = os.path.join(tmpDir, "auth-%s.htdigest" % (serverId))
-    _Util.generateApacheHtdigestFile(htdigestFn, "webdav")
 
     # wsgi script
     wsgiFn = os.path.join(tmpDir, "wsgi-%s.py" % (serverId))
@@ -49,7 +47,8 @@ def start(params):
     buf += 'ServerName %s\n' % (domainName)
     buf += 'DocumentRoot "%s"\n' % (webRootDir)
     buf += 'WSGIScriptAlias / %s\n' % (wsgiFn)
-    buf += 'WSGIChunkedRequest On\n'
+    buf += 'WSGIPassAuth On\n'
+    # buf += 'WSGIChunkedRequest On\n'
     buf += '\n'
 
     cfg = {
@@ -72,10 +71,3 @@ class _Util:
     def ensureDir(dirname):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-
-    @staticmethod
-    def generateApacheHtdigestFile(filename, scope):
-        # user "write", without password
-        with open(filename, "w") as f:
-            # username:scope:password-digest
-            f.write('%s:%s:%s\n' % ("write", scope, hashlib.md5(':'.join(ui).encode("iso8859-1")).hexdigest()))
