@@ -6,18 +6,21 @@ import hashlib
 
 
 """
-    URL                 USER        EFFECT
-    http://...                      http-ui,read-only
-    http://...          ro          http-ui,read-only
-    http://...          rw          http-ui,read-write
-    http://.../pub                  httpdir
-    http://.../pub      ro          httpdir
-    http://.../pub      rw          httpdir
-    http://.../dav                  http-webdav,read-only
-    http://.../dav      ro          http-webdav,read-only
-    http://.../dav      rw          http-webdav,read-write
+Access:
+  URL                 USER        EFFECT
+  http://...                      filemanager-ui,read-only
+  http://...          ro          filemanager-ui,read-only
+  http://...          rw          filemanager-ui,read-write
+  http://.../pub                  httpdir
+  http://.../pub      ro          httpdir
+  http://.../pub      rw          httpdir
+  http://.../dav                  webdav,read-only
+  http://.../dav      ro          webdav,read-only
+  http://.../dav      rw          webdav,read-write
 
-we don't support ftp-protocol since it does not support one-server-multiple-domain.
+Notes:
+  1. We don't support ftp-protocol since it does not support one-server-multiple-domain.
+  2. We have to use "pub" and "dav" subdirectory. Static files for filemanager-ui would conflict with the files being served if not doing so.
 """
 
 
@@ -47,7 +50,7 @@ def start(params):
         buf += 'from wsgidav.wsgidav_app import WsgiDAVApp\n'
         buf += '\n'
         buf += 'config = {\n'
-        buf += '    "provider_mapping": {"/": FilesystemProvider(%s)}\n' % (dataDir),
+        buf += '    "provider_mapping": {"/": FilesystemProvider(%s)}\n' % (webdavDir),
         buf += '    "verbose": 1,\n'
         buf += '    }\n'
         buf += 'application = WsgiDAVApp(config)\n'
@@ -57,7 +60,11 @@ def start(params):
     buf = ''
     buf += 'ServerName %s\n' % (domainName)
     buf += 'DocumentRoot "%s"\n' % (webRootDir)
-    buf += 'WSGIScriptAlias / %s\n' % (wsgiFn)
+    buf += '<Directory "%s">\n' % (pubDir)
+    buf += '    Options Indexes\n'
+    buf += '    Require all granted\n'
+    buf += '</Directory>\n'
+    buf += 'WSGIScriptAlias /dav %s\n' % (wsgiFn)
     buf += 'WSGIPassAuth On\n'
     # buf += 'WSGIChunkedRequest On\n'
     buf += '\n'

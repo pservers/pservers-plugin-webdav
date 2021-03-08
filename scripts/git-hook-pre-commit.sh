@@ -1,7 +1,7 @@
 #!/bin/bash
 
 FILES=""
-FILES="${FILES} $(find ./klaus -name '*.py' | tr '\n' ' ')"
+FILES="${FILES} $(find ./webdav -name '*.py' | tr '\n' ' ')"
 ERRFLAG=0
 
 OUTPUT=`pyflakes ${FILES} 2>&1`
