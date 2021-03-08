@@ -6,13 +6,16 @@ import hashlib
 
 
 """
-    PROTOCOL        USER        EFFECT
-    http            None        httpdir
-    http            ro          http-ui
-    http            rw          http-ui
-    http-webdav     None        http-webdav,read-only
-    http-webdav     ro          http-webdav,read-only
-    http-webdav     rw          http-webdav,read-write
+    URL                 USER        EFFECT
+    http://...                      http-ui,read-only
+    http://...          ro          http-ui,read-only
+    http://...          rw          http-ui,read-write
+    http://.../pub                  httpdir
+    http://.../pub      ro          httpdir
+    http://.../pub      rw          httpdir
+    http://.../dav                  http-webdav,read-only
+    http://.../dav      ro          http-webdav,read-only
+    http://.../dav      rw          http-webdav,read-write
 
 we don't support ftp-protocol since it does not support one-server-multiple-domain.
 """
@@ -24,6 +27,14 @@ def start(params):
     dataDir = params["data-directory"]
     tmpDir = params["temp-directory"]
     webRootDir = params["webroot-directory"]
+
+    # pub directory in root directory
+    pubDir = os.path.join(webRootDir, "pub")
+    os.symlink(dataDir, pubDir)
+
+    # webdav directory in root directory
+    webdavDir = os.path.join(webRootDir, "dav")
+    os.symlink(dataDir, webdavDir)
 
     # wsgi script
     wsgiFn = os.path.join(tmpDir, "wsgi-%s.py" % (serverId))
